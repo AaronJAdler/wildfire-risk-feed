@@ -24,8 +24,8 @@ jobs:
               "https://www.fire.ca.gov/umbraco/api/IncidentApi/GeoJsonList?inactive=false",
               "https://www.fire.ca.gov/umbraco/api/IncidentApi/GeoJsonList?inactive=true",
               "https://incidents.fire.ca.gov/umbraco/api/IncidentApi/List?inactive=false",
-              WFIGS + "/WFIGS_Incident_Locations_Current/FeatureServer/0/query?where=POOState%3D%27US-CA%27&outFields=*&resultRecordCount=500&f=json",
-              WFIGS + "/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?where=attr_POOState%3D%27US-CA%27&outFields=*&returnGeometry=false&f=json",
+              WFIGS + "/WFIGS_Incident_Locations_Current/FeatureServer/0/query?where=POOState%3D%27US-CA%27&outFields=*&resultRecordCount=500&outSR=4326&f=json",
+              WFIGS + "/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?where=attr_POOState%3D%27US-CA%27&outFields=*&outSR=4326&f=json",
           ]
           for url in urls:
               print("=" * 100); print(url)
@@ -37,6 +37,11 @@ jobs:
                   print("ERROR", type(e).__name__, str(e)[:200]); continue
               rows = data if isinstance(data, list) else data.get("features") or data.get("Incidents") or []
               print("type", type(data).__name__, "keys", list(data)[:10] if isinstance(data, dict) else "-", "rows", len(rows))
+              if "arcgis" in url and rows:
+                  a = rows[0].get("attributes") or {}
+                  print("  FIELDS:", sorted(k for k, v in a.items()))
+                  print("  NONNULL:", {k: v for k, v in a.items() if v not in (None, "")})
+                  print("  GEOMETRY:", json.dumps(rows[0].get("geometry"))[:300], data.get("spatialReference"))
               for row in rows[:3]:
                   attrs = row.get("attributes") or row.get("properties") or row
                   print("  sample:", json.dumps(attrs, default=str)[:900])
