@@ -112,3 +112,33 @@ def test_footprint_and_neighbours_attribute_a_spreading_fire() -> None:
     assert len(owners) == len(groups)  # nothing left over to look like a new fire
     assert fires.attribute(fires.clusters(spread + beyond, 7), [incident], {}, 10) == {}
     assert fires.attribute(fires.clusters(origin, 7), [incident], {}, 10)
+
+
+def test_the_state_outline_keeps_reno_and_las_vegas_out() -> None:
+    assert geo.in_california(38.58, -121.49)  # Sacramento
+    assert geo.in_california(32.72, -117.16)  # San Diego
+    assert geo.in_california(41.75, -124.10)  # Crescent City
+    assert not geo.in_california(39.618, -119.261)  # Reno area, from the first live run
+    assert not geo.in_california(36.365, -114.900)  # Las Vegas area, from the first live run
+
+
+def test_weak_heat_on_one_pass_is_not_a_new_fire() -> None:
+    refinery = fires.Cluster(_hot(3, frp=2))  # the 1-3 MW detections seen live in November
+    assert not refinery.qualifies
+    assert fires.Cluster(_hot(2, frp=8)).qualifies
+    two_passes = _hot(1, frp=2) + _hot(1, frp=2, age_h=3)
+    assert fires.Cluster(two_passes).qualifies
+    assert fires.Cluster(_hot(1, frp=15, confidence=0.95)).qualifies
+
+
+def test_heat_seen_on_many_days_counts_as_a_persistent_source(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from riskfeed.store import Store
+
+    store = Store(tmp_path / "s.duckdb")
+    for day in range(4):
+        store.add_hotspots(_hot(1, age_h=24 * day + 1), NOW)
+    store.add_hotspots(_hot(1, lat=LAT + 1, age_h=1), NOW)  # once only
+    persistent = store.persistent_cells(NOW, 7)
+    assert geo.cell(LAT, LON, 7) in persistent
+    assert geo.cell(LAT + 1, LON, 7) not in persistent
+    store.close()

@@ -58,7 +58,7 @@ Needs Python 3.12 and [uv](https://docs.astral.sh/uv/). Works on Windows, macOS 
 
 ```bash
 uv sync
-uv run pytest                                   # 34 tests, about 20 seconds
+uv run pytest                                   # 37 tests, about 20 seconds
 uv run riskfeed replay fixtures/caldor-2021     # writes .replay/public/
 uv run riskfeed tick                            # one live run, writes public/
 ```
@@ -76,7 +76,7 @@ Optional settings, as environment variables (or repository secrets for the live 
 
 | Check | Where |
 |---|---|
-| Lint (ruff), strict types (mypy), 34 tests: HTTP resilience, each source's parsing and failure modes, score properties, attribution, alert lifecycle, circuit breaker, webhook retries, idempotent reruns, the full scenario | Locally and in CI |
+| Lint (ruff), strict types (mypy), 37 tests: HTTP resilience, each source's parsing and failure modes, score properties, attribution, alert lifecycle, circuit breaker, webhook retries, idempotent reruns, the full scenario | Locally and in CI |
 | Scenario replay | CI, printed to the run summary |
 | Live CAL FIRE, FIRMS and NWS | The scheduled `Live feed` workflow only. The APIs were not reachable from where this was built, so the first live runs are the first contact; check the workflow's run summaries. |
 

@@ -17,7 +17,7 @@ from typing import Any
 
 import httpx
 
-from riskfeed import alerts, fires, scoring
+from riskfeed import alerts, fires, geo, scoring
 from riskfeed.config import Settings
 from riskfeed.delivery import Sink, deliver
 from riskfeed.http import Fetcher
@@ -91,6 +91,8 @@ def _collect(
                 store.replace_weather(result.records)
             store.quarantine(run_id, name, result.quarantined, now)
             store.mark_success(name, now, len(result.records), len(result.quarantined))
+            if name == "firms":
+                store.forget_hotspots(now - dt.timedelta(days=45))
             store.set_breaker(name, 0, None)
         else:
             failures += 1
@@ -155,10 +157,23 @@ def run_tick(
     owners = fires.attribute(
         groups, incidents, store.footprint(now - FOOTPRINT_MEMORY), settings.ignition_match_km
     )
+    persistent = store.persistent_cells(now, settings.ignition_cluster_resolution)
+
+    def not_a_fire(lat: float, lon: float) -> str | None:
+        if not geo.in_california(lat, lon):
+            return "outside California"
+        here = geo.ring(geo.cell(lat, lon, settings.ignition_cluster_resolution), 1)
+        if here & persistent:
+            return "a persistent heat source (seen on 3+ days in 30), such as an industrial site"
+        return None
+
     candidates = [
         g
         for i, g in enumerate(groups)
-        if i not in owners and g.qualifies and g.last > now - settings.ignition_window
+        if i not in owners
+        and g.qualifies
+        and g.last > now - settings.ignition_window
+        and not_a_fire(g.lat, g.lon) is None
     ]
     with store.transaction():
         store.update_footprint(
@@ -179,6 +194,7 @@ def run_tick(
             recent,
             health,
             settings,
+            not_a_fire,
         )
         store.record_run(run_id, now, completeness, sources, [s.as_row() for s in scores.values()])
     delivery = deliver(store, sinks, now)

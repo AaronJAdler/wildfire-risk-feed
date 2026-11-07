@@ -65,10 +65,18 @@ class Cluster:
 
     @property
     def qualifies(self) -> bool:
-        """Two detections, or one high-confidence detection with real heat. A single
-        low-confidence pixel is usually a hot roof, a flare or a field being burned."""
-        strong = any(h.confidence >= 0.95 and h.frp >= 10 for h in self.hotspots)
-        return len(self.hotspots) >= 2 or strong
+        """Enough heat to be a fire rather than an industrial site or a warm roof.
+
+        Two or more detections that either carry real heat (5 MW or more) or were seen on more
+        than one satellite pass; or one high-confidence detection of 10 MW or more. The first live
+        run, in November, raised 29 alerts on 1-3 MW detections at refineries and city sites.
+        """
+        if any(h.confidence >= 0.95 and h.frp >= 10 for h in self.hotspots):
+            return True
+        passes = {
+            h.detected_at.replace(minute=h.detected_at.minute // 30 * 30) for h in self.hotspots
+        }
+        return len(self.hotspots) >= 2 and (self.peak_frp >= 5 or len(passes) >= 2)
 
 
 def clusters(hotspots: list[Hotspot], resolution: int) -> list[Cluster]:

@@ -27,6 +27,13 @@ failures: one alert per hexagon (Dixie alone raised 11), and Caldor's spread rai
 - Lead time is measured from the alert to this feed's first sighting of the incident in CAL
   FIRE's list, not from CAL FIRE's own timestamps.
 
+- Not every unattributed group is a candidate. The first live run (November 2026) raised 29
+  "possible new fire" alerts, nearly all 1-3 MW detections at refineries and city sites, plus
+  Reno and Las Vegas inside the bounding box. A candidate now needs real heat (two detections and
+  5 MW, or two satellite passes, or one high-confidence 10 MW detection), must be inside a
+  California outline, and must not be a persistent heat source: a place with detections on 3 or
+  more days in the last 30. Open alerts that a filter now rejects are closed as `dismissed`.
+
 ## Consequences
 
 - The replay now raises one alert per fire, and no false new-fire alerts as Caldor grows.

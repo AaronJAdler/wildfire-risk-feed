@@ -97,7 +97,8 @@ def fetch(fetcher: Fetcher, settings: Settings) -> SourceResult:
         incidents, quarantined = parse(json.loads(response.body))
     except ValueError as exc:  # includes JSON errors: an HTML error page served with 200
         return SourceResult("calfire", ok=False, detail=f"unreadable payload: {exc}"[:200])
-    detail = f"{len(incidents)} active incidents" + (
+    listed = len(payload) if isinstance(payload := json.loads(response.body), list) else 0
+    detail = f"{len(incidents)} active of {listed} listed" + (
         " (not modified)" if response.from_cache else ""
     )
     return SourceResult(

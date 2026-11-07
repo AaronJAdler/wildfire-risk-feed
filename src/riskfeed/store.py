@@ -229,6 +229,28 @@ class Store:
         after = self.db.execute("SELECT count(*) FROM hotspots").fetchone()
         return int(after[0] - before[0]) if after and before else 0
 
+    def persistent_cells(
+        self, now: dt.datetime, resolution: int, days: int = 30, min_days: int = 3
+    ) -> set[str]:
+        """Cells with detections on `min_days` or more separate days in the last `days`.
+
+        Real wildfires move; refineries, landfills and power plants do not. This is the same idea
+        as NASA's static thermal anomaly mask, learned from the feed's own history.
+        """
+        from riskfeed.geo import cell  # local import: geo has no store dependency
+
+        rows = self.db.execute(
+            "SELECT lat, lon, CAST(detected_at AS DATE) FROM hotspots WHERE detected_at > ?",
+            [to_db(now - dt.timedelta(days=days))],
+        ).fetchall()
+        seen: dict[str, set[object]] = {}
+        for lat, lon, day in rows:
+            seen.setdefault(cell(lat, lon, resolution), set()).add(day)
+        return {c for c, d in seen.items() if len(d) >= min_days}
+
+    def forget_hotspots(self, before: dt.datetime) -> None:
+        self.db.execute("DELETE FROM hotspots WHERE detected_at < ?", [to_db(before)])
+
     def hotspots_between(self, start: dt.datetime, end: dt.datetime) -> list[Hotspot]:
         rows = self._rows(
             "SELECT * FROM hotspots WHERE detected_at > ? AND detected_at <= ? ORDER BY key",

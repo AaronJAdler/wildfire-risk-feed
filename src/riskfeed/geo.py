@@ -15,6 +15,40 @@ def in_bbox(lat: float, lon: float, bbox: tuple[float, float, float, float]) -> 
     return south <= lat <= north and west <= lon <= east
 
 
+# A coarse outline of California (lat, lon), clockwise from the Oregon line at the coast. Accurate
+# to a few kilometres: enough to keep Reno and Las Vegas out of alerts.
+CA_OUTLINE = (
+    (42.00, -124.21),
+    (42.00, -120.00),
+    (39.00, -120.00),
+    (35.00, -114.63),
+    (34.30, -114.13),
+    (33.43, -114.72),
+    (32.72, -114.72),
+    (32.53, -117.12),
+    (33.75, -118.40),
+    (34.45, -120.47),
+    (35.67, -121.30),
+    (36.60, -121.90),
+    (37.80, -122.52),
+    (38.95, -123.73),
+    (40.44, -124.41),
+    (41.75, -124.20),
+)
+
+
+def in_california(lat: float, lon: float) -> bool:
+    """Ray casting against CA_OUTLINE."""
+    inside = False
+    points = CA_OUTLINE
+    for (lat1, lon1), (lat2, lon2) in zip(points, points[1:] + points[:1], strict=True):
+        if (lat1 > lat) != (lat2 > lat):
+            crossing = lon1 + (lat - lat1) * (lon2 - lon1) / (lat2 - lat1)
+            if lon < crossing:
+                inside = not inside
+    return inside
+
+
 def cell(lat: float, lon: float, resolution: int) -> str:
     return str(h3.latlng_to_cell(lat, lon, resolution))
 
