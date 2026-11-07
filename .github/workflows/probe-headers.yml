@@ -1,0 +1,19 @@
+name: Probe embed headers
+
+# Manual diagnostic: may a page be embedded in an iframe?
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          URL: ${{ inputs.url }}
+        run: curl -sSIL "$URL" | grep -iE "^(HTTP|x-frame-options|content-security-policy|location)"
