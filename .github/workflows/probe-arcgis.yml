@@ -1,0 +1,42 @@
+name: Probe ArcGIS item
+
+# Manual diagnostic: what an ArcGIS Online app or map is built from.
+on:
+  workflow_dispatch:
+    inputs:
+      item:
+        description: ArcGIS item id
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          ITEM: ${{ inputs.item }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, urllib.request
+          base = "https://www.arcgis.com/sharing/rest/content/items/"
+          def get(url):
+              with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "wildfire-risk-feed probe"}), timeout=30) as r:
+                  return json.loads(r.read())
+          seen, queue = set(), [os.environ["ITEM"]]
+          while queue and len(seen) < 12:
+              item = queue.pop(0)
+              if item in seen: continue
+              seen.add(item)
+              meta = get(base + item + "?f=json")
+              print("=" * 90); print("ITEM", item, "|", meta.get("type"), "|", meta.get("title"), "|", meta.get("owner"), "|", meta.get("access"))
+              print("  snippet:", (meta.get("snippet") or "")[:300]); print("  url:", meta.get("url"))
+              try: data = json.dumps(get(base + item + "/data?f=json"))
+              except Exception as e: print("  no data:", e); continue
+              for u in sorted(set(re.findall(r'https?://[^"\\]+?/(?:FeatureServer|MapServer|ImageServer|VectorTileServer)(?:/\d+)?', data))):
+                  print("  SERVICE", u)
+              for t in sorted(set(re.findall(r'"title": "([^"]{3,120})"', data)))[:40]:
+                  print("  TITLE", t)
+              queue += [i for i in set(re.findall(r'"itemId": "([0-9a-f]{32})"', data)) if i not in seen]
+          PY
