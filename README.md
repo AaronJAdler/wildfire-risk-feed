@@ -9,6 +9,8 @@ flags satellite heat that no reported incident explains, and sends deduplicated 
 
 **[Live map](https://aaronjadler.github.io/wildfire-risk-feed/)** · [GeoJSON feed](https://aaronjadler.github.io/wildfire-risk-feed/feed.geojson) · [status](https://aaronjadler.github.io/wildfire-risk-feed/status.json)
 
+**ArcGIS Online:** [Instant App](https://www.arcgis.com/apps/instant/basic/index.html?appid=0cfa3cabe6704c51976fff69a9414747) · [web map](https://www.arcgis.com/home/item.html?id=c21761c263b9432998b850b1ca266bb6). The live feed's GeoJSON layers over CAL FIRE's Fire Hazard Severity Zones and Fire Responsibility Areas. ArcGIS reads the feed's public files directly, so it updates with every run.
+
 ![The map after replaying August 2021: Caldor extreme, Dixie and Evans high](docs/map.png)
 
 *The recorded scenario at its last tick. The live site shows an OpenStreetMap basemap; it was blocked where this screenshot was taken.*
