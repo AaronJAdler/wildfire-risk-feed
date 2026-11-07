@@ -36,6 +36,10 @@
   .legend span { display: inline-flex; align-items: center; margin-right: 10px; font-size: 12px; }
   .legend i { width: 12px; height: 12px; border-radius: 3px; margin-right: 4px; }
   #map { height: 100vh; }
+  .tabs { display: flex; gap: 14px; margin: 6px 0 10px; }
+  .tabs a { color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; }
+  .tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--high); }
+  .tabs a:hover { color: var(--ink); }
   @media (max-width: 760px) {
     body { grid-template-columns: 1fr; grid-template-rows: auto 60vh; height: auto; }
     aside { border-right: 0; border-bottom: 1px solid var(--line); }
@@ -46,6 +50,7 @@
 <body>
 <aside>
   <h1>California wildfire risk</h1>
+  <nav class="tabs"><a href="./" aria-current="page">Live map</a><a href="./arcgis.html">ArcGIS</a></nav>
   <div class="meta" id="generated">Loading…</div>
   <div class="legend" style="margin-top:10px">
     <span><i style="background:var(--low)"></i>low</span>

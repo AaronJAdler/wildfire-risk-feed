@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>California Wildfire Risk · ArcGIS</title>
+<style>
+  :root { --bg: #f7f5f2; --panel: #ffffff; --ink: #1d1b19; --muted: #6b6560; --line: #e4dfd9; --accent: #b5401f; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #151413; --panel: #1f1d1b; --ink: #f1ede8; --muted: #a59e97; --line: #34302c; --accent: #e07a4f; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg);
+         color: var(--ink); display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; padding: 10px 16px;
+           background: var(--panel); border-bottom: 1px solid var(--line); }
+  h1 { font-size: 16px; margin: 0; }
+  nav { display: flex; gap: 14px; }
+  nav a { color: var(--muted); text-decoration: none; padding: 2px 0; border-bottom: 2px solid transparent; }
+  nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
+  nav a:hover { color: var(--ink); }
+  .meta { color: var(--muted); font-size: 13px; margin-left: auto; }
+  .meta a { color: inherit; }
+  iframe { flex: 1; width: 100%; border: 0; display: block; min-height: 480px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>California wildfire risk</h1>
+  <nav>
+    <a href="./">Live map</a>
+    <a href="./arcgis.html" aria-current="page">ArcGIS</a>
+  </nav>
+  <span class="meta">The live feed over CAL FIRE's Fire Hazard Severity Zones, in ArcGIS Online ·
+    <a href="https://www.arcgis.com/apps/instant/basic/index.html?appid=0cfa3cabe6704c51976fff69a9414747" target="_blank" rel="noopener">Open full screen</a> ·
+    <a href="https://www.arcgis.com/home/item.html?id=c21761c263b9432998b850b1ca266bb6" target="_blank" rel="noopener">Web map</a></span>
+</header>
+<iframe title="California Wildfire Risk Feed in ArcGIS Online"
+        src="https://www.arcgis.com/apps/instant/basic/index.html?appid=0cfa3cabe6704c51976fff69a9414747"
+        allowfullscreen loading="lazy"></iframe>
+</body>
+</html>

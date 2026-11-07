@@ -84,8 +84,9 @@ def publish(
     _write(out / "alerts.json", json.dumps(alerts, indent=2, default=str))
     _write(out / "status.json", json.dumps(status, indent=2, default=str))
     _write_layers(out, header, layers or {})
-    page = resources.files("riskfeed").joinpath("web/index.html").read_text(encoding="utf-8")
-    _write(out / "index.html", page)
+    for name in ("index.html", "arcgis.html"):
+        page = resources.files("riskfeed").joinpath(f"web/{name}").read_text(encoding="utf-8")
+        _write(out / name, page)
 
 
 def _point(lon: float, lat: float, props: dict[str, Any]) -> dict[str, Any]:
