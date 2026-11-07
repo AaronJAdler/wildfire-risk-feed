@@ -1,0 +1,50 @@
+name: Probe incident sources
+
+# Manual diagnostic: which incident endpoints return data right now, and in what shape.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Probe
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          UA = {"User-Agent": "wildfire-risk-feed/0.1 (+https://github.com/AaronJAdler/wildfire-risk-feed)",
+                "Accept": "application/json"}
+          WFIGS = "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services"
+          urls = [
+              "https://www.fire.ca.gov/umbraco/api/IncidentApi/List?inactive=false",
+              "https://www.fire.ca.gov/umbraco/api/IncidentApi/List?inactive=true",
+              "https://www.fire.ca.gov/umbraco/api/IncidentApi/GeoJsonList?inactive=false",
+              "https://www.fire.ca.gov/umbraco/api/IncidentApi/GeoJsonList?inactive=true",
+              "https://incidents.fire.ca.gov/umbraco/api/IncidentApi/List?inactive=false",
+              WFIGS + "/WFIGS_Incident_Locations_Current/FeatureServer/0/query?where=POOState%3D%27US-CA%27&outFields=*&resultRecordCount=500&f=json",
+              WFIGS + "/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?where=attr_POOState%3D%27US-CA%27&outFields=*&returnGeometry=false&f=json",
+          ]
+          for url in urls:
+              print("=" * 100); print(url)
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30) as r:
+                      body = r.read(); print("status", r.status, "bytes", len(body), r.headers.get("Content-Type"))
+                  data = json.loads(body)
+              except Exception as e:
+                  print("ERROR", type(e).__name__, str(e)[:200]); continue
+              rows = data if isinstance(data, list) else data.get("features") or data.get("Incidents") or []
+              print("type", type(data).__name__, "keys", list(data)[:10] if isinstance(data, dict) else "-", "rows", len(rows))
+              for row in rows[:3]:
+                  attrs = row.get("attributes") or row.get("properties") or row
+                  print("  sample:", json.dumps(attrs, default=str)[:900])
+              if rows:
+                  attrs = [(r.get("attributes") or r.get("properties") or r) for r in rows]
+                  for key in ("IsActive", "Active", "Final", "IncidentTypeCategory", "POOProtectingAgency", "PercentContained", "attr_IncidentTypeCategory"):
+                      vals = {}
+                      for a in attrs:
+                          if key in a: vals[str(a[key])] = vals.get(str(a[key]), 0) + 1
+                      if vals: print(f"  {key}: {dict(sorted(vals.items(), key=lambda kv: -kv[1])[:8])}")
+          PY
