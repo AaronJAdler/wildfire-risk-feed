@@ -126,6 +126,8 @@ def test_weak_heat_on_one_pass_is_not_a_new_fire() -> None:
     refinery = fires.Cluster(_hot(3, frp=2))  # the 1-3 MW detections seen live in November
     assert not refinery.qualifies
     assert fires.Cluster(_hot(2, frp=8)).qualifies
+    one_night = _hot(1, frp=2) + _hot(1, frp=2, age_h=0.75)  # two satellites, 45 min apart
+    assert not fires.Cluster(one_night).qualifies
     two_passes = _hot(1, frp=2) + _hot(1, frp=2, age_h=3)
     assert fires.Cluster(two_passes).qualifies
     assert fires.Cluster(_hot(1, frp=15, confidence=0.95)).qualifies

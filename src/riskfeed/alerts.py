@@ -216,7 +216,7 @@ def _ignitions(
     recent: list[Hotspot],
     health: dict[str, Health],
     settings: Settings,
-    not_a_fire: Callable[[float, float], str | None],
+    not_a_fire: Callable[..., str | None],
 ) -> list[Transition]:
     out: list[Transition] = []
     open_alerts = store.open_alerts("ignition")
@@ -283,7 +283,7 @@ def _ignitions(
 
     for alert in store.open_alerts("ignition"):
         lat, lon = alert["details"]["lat"], alert["details"]["lon"]
-        reason = not_a_fire(lat, lon)
+        reason = not_a_fire(lat, lon, alert["details"])
         if reason:
             alert["details"]["dismissed"] = reason
             alert["status"], alert["closed_at"], alert["level"] = "closed", now, "dismissed"
@@ -369,7 +369,7 @@ def evaluate(
     recent: list[Hotspot],
     health: dict[str, Health],
     settings: Settings,
-    not_a_fire: Callable[[float, float], str | None] = lambda lat, lon: None,
+    not_a_fire: Callable[..., str | None] = lambda *_: None,
 ) -> list[Transition]:
     """Every alert transition for this run. `candidates` are qualifying unattributed groups."""
     missing = sorted(source for source, state in health.items() if state != "ok")

@@ -159,12 +159,17 @@ def run_tick(
     )
     persistent = store.persistent_cells(now, settings.ignition_cluster_resolution)
 
-    def not_a_fire(lat: float, lon: float) -> str | None:
+    def not_a_fire(lat: float, lon: float, details: dict[str, Any] | None = None) -> str | None:
         if not geo.in_california(lat, lon):
             return "outside California"
         here = geo.ring(geo.cell(lat, lon, settings.ignition_cluster_resolution), 1)
         if here & persistent:
             return "a persistent heat source (seen on 3+ days in 30), such as an industrial site"
+        if details is not None:
+            first = dt.datetime.fromisoformat(details["first_detected"])
+            last = dt.datetime.fromisoformat(details["last_detected"])
+            if details["peak_frp"] < 5 and last - first < dt.timedelta(hours=3):
+                return "too little heat to be a fire (under 5 MW and not sustained)"
         return None
 
     candidates = [
