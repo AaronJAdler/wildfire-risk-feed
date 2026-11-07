@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>California Wildfire Risk Feed</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+  :root { --bg: #f7f5f2; --panel: #ffffff; --ink: #1d1b19; --muted: #6b6560; --line: #e4dfd9;
+          --low: #f2d98a; --moderate: #f0a24b; --high: #d9562b; --extreme: #8f1d14;
+          --ok: #2f7d4f; --warn: #b7791f; --bad: #b42318; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #151413; --panel: #1f1d1b; --ink: #f1ede8; --muted: #a59e97; --line: #34302c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: var(--bg); color: var(--ink); display: grid;
+         grid-template-columns: minmax(280px, 360px) 1fr; height: 100vh; }
+  aside { padding: 20px 18px; overflow-y: auto; border-right: 1px solid var(--line);
+          background: var(--panel); }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+       margin: 22px 0 8px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px;
+           font-weight: 600; }
+  .complete { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+  .partial { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--warn); }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:last-child { text-align: right; color: var(--muted); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .alert { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .alert b { display: block; }
+  .legend span { display: inline-flex; align-items: center; margin-right: 10px; font-size: 12px; }
+  .legend i { width: 12px; height: 12px; border-radius: 3px; margin-right: 4px; }
+  #map { height: 100vh; }
+  @media (max-width: 760px) {
+    body { grid-template-columns: 1fr; grid-template-rows: auto 60vh; height: auto; }
+    aside { border-right: 0; border-bottom: 1px solid var(--line); }
+    #map { height: 60vh; }
+  }
+</style>
+</head>
+<body>
+<aside>
+  <h1>California wildfire risk</h1>
+  <div class="meta" id="generated">Loading…</div>
+  <div class="legend" style="margin-top:10px">
+    <span><i style="background:var(--low)"></i>low</span>
+    <span><i style="background:var(--moderate)"></i>moderate</span>
+    <span><i style="background:var(--high)"></i>high</span>
+    <span><i style="background:var(--extreme)"></i>extreme</span>
+  </div>
+  <h2>Sources</h2>
+  <table id="sources"></table>
+  <h2>Open alerts</h2>
+  <div id="alerts" class="meta">None</div>
+  <h2>About</h2>
+  <p class="meta">Each hexagon is about 36 km². Scores combine NASA FIRMS satellite
+    detections, CAL FIRE incidents and NWS fire weather alerts. This is a triage view, not an
+    official warning: follow local authorities.</p>
+</aside>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const healthColor = { ok: "--ok", stale: "--warn", down: "--bad" };
+const text = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const map = L.map("map", { zoomSnap: 0.5 }).setView([37.3, -119.5], 6);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 12, attribution: "&copy; OpenStreetMap contributors"
+}).addTo(map);
+
+async function load(name) {
+  const response = await fetch(name, { cache: "no-store" });
+  if (!response.ok) throw new Error(name + ": HTTP " + response.status);
+  return response.json();
+}
+
+Promise.all([load("feed.geojson"), load("status.json"), load("alerts.json")]).then(([feed, status, alerts]) => {
+  const when = new Date(status.generated_at);
+  document.getElementById("generated").innerHTML =
+    `Updated ${when.toUTCString().replace("GMT", "UTC")} · ` +
+    `<span class="badge ${status.completeness}">${status.completeness}</span>`;
+  document.getElementById("sources").innerHTML = Object.entries(status.sources).map(([name, s]) =>
+    `<tr><td><span class="dot" style="background:${css(healthColor[s.health])}"></span>${text(name)}
+       <div class="meta">${text(s.detail || "")}</div></td><td>${text(s.health)}</td></tr>`).join("");
+  if (alerts.open.length) {
+    document.getElementById("alerts").innerHTML = alerts.open.map(a =>
+      `<div class="alert"><b>${text(a.title)}</b>${text(a.text)}</div>`).join("");
+  }
+  const layer = L.geoJSON(feed, {
+    style: f => ({ color: css("--" + f.properties.level), weight: 0.6,
+                   fillColor: css("--" + f.properties.level), fillOpacity: 0.55 }),
+    onEachFeature: (f, l) => l.bindPopup(
+      `<b>Score ${f.properties.score} (${f.properties.level})</b><br>` +
+      f.properties.reasons.map(text).join("<br>"))
+  }).addTo(map);
+  if (feed.features.length) map.fitBounds(layer.getBounds(), { padding: [20, 20], maxZoom: 9 });
+}).catch(err => { document.getElementById("generated").textContent = "Could not load the feed: " + err.message; });
+</script>
+</body>
+</html>

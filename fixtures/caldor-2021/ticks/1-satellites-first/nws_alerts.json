@@ -1,0 +1,209 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture.rfw.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture.rfw.1",
+    "id": "urn:oid:2.49.0.1.840.0.fixture.rfw.1",
+    "areaDesc": "CAZ901, CAZ902",
+    "geocode": {
+     "UGC": [
+      "CAZ901",
+      "CAZ902"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/fire/CAZ901",
+     "https://api.weather.gov/zones/fire/CAZ902"
+    ],
+    "references": [],
+    "sent": "2021-08-15T06:00:00+00:00",
+    "effective": "2021-08-15T06:00:00+00:00",
+    "onset": "2021-08-15T06:00:00+00:00",
+    "expires": "2021-08-16T03:00:00+00:00",
+    "ends": "2021-08-16T03:00:00+00:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Red Flag Warning",
+    "senderName": "NWS Sacramento CA (fixture)",
+    "headline": "Red Flag Warning in effect until 2021-08-16T03:00:00+00:00 (fixture)",
+    "description": "Generated for tests. Not a real NWS product."
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture.fww.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -123.6,
+       40.1
+      ],
+      [
+       -122.8,
+       40.1
+      ],
+      [
+       -122.8,
+       41.0
+      ],
+      [
+       -123.6,
+       41.0
+      ],
+      [
+       -123.6,
+       40.1
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture.fww.1",
+    "id": "urn:oid:2.49.0.1.840.0.fixture.fww.1",
+    "areaDesc": "Fixture polygon",
+    "geocode": {
+     "UGC": []
+    },
+    "affectedZones": [],
+    "references": [],
+    "sent": "2021-08-15T18:00:00+00:00",
+    "effective": "2021-08-15T18:00:00+00:00",
+    "onset": "2021-08-15T18:00:00+00:00",
+    "expires": "2021-08-16T06:00:00+00:00",
+    "ends": "2021-08-16T06:00:00+00:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Fire Weather Watch",
+    "senderName": "NWS Sacramento CA (fixture)",
+    "headline": "Fire Weather Watch in effect until 2021-08-16T06:00:00+00:00 (fixture)",
+    "description": "Generated for tests. Not a real NWS product."
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture.test.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -118.5,
+       33.0
+      ],
+      [
+       -117.0,
+       33.0
+      ],
+      [
+       -117.0,
+       34.0
+      ],
+      [
+       -118.5,
+       34.0
+      ],
+      [
+       -118.5,
+       33.0
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture.test.1",
+    "id": "urn:oid:2.49.0.1.840.0.fixture.test.1",
+    "areaDesc": "Fixture polygon",
+    "geocode": {
+     "UGC": []
+    },
+    "affectedZones": [],
+    "references": [],
+    "sent": "2021-08-15T06:00:00+00:00",
+    "effective": "2021-08-15T06:00:00+00:00",
+    "onset": "2021-08-15T06:00:00+00:00",
+    "expires": "2021-08-16T06:00:00+00:00",
+    "ends": "2021-08-16T06:00:00+00:00",
+    "status": "Test",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Red Flag Warning",
+    "senderName": "NWS Sacramento CA (fixture)",
+    "headline": "Red Flag Warning in effect until 2021-08-16T06:00:00+00:00 (fixture)",
+    "description": "Generated for tests. Not a real NWS product."
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture.heat.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -120.5,
+       36.0
+      ],
+      [
+       -119.0,
+       36.0
+      ],
+      [
+       -119.0,
+       37.0
+      ],
+      [
+       -120.5,
+       37.0
+      ],
+      [
+       -120.5,
+       36.0
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture.heat.1",
+    "id": "urn:oid:2.49.0.1.840.0.fixture.heat.1",
+    "areaDesc": "Fixture polygon",
+    "geocode": {
+     "UGC": []
+    },
+    "affectedZones": [],
+    "references": [],
+    "sent": "2021-08-15T17:00:00+00:00",
+    "effective": "2021-08-15T17:00:00+00:00",
+    "onset": "2021-08-15T17:00:00+00:00",
+    "expires": "2021-08-16T03:00:00+00:00",
+    "ends": "2021-08-16T03:00:00+00:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Heat Advisory",
+    "senderName": "NWS Sacramento CA (fixture)",
+    "headline": "Heat Advisory in effect until 2021-08-16T03:00:00+00:00 (fixture)",
+    "description": "Generated for tests. Not a real NWS product."
+   }
+  }
+ ]
+}

@@ -1,0 +1,36 @@
+{
+ "id": "https://api.weather.gov/zones/fire/CAZ902",
+ "type": "Feature",
+ "geometry": {
+  "type": "Polygon",
+  "coordinates": [
+   [
+    [
+     -121.0,
+     38.3
+    ],
+    [
+     -119.9,
+     38.3
+    ],
+    [
+     -119.9,
+     39.0
+    ],
+    [
+     -121.0,
+     39.0
+    ],
+    [
+     -121.0,
+     38.3
+    ]
+   ]
+  ]
+ },
+ "properties": {
+  "id": "CAZ902",
+  "type": "fire",
+  "name": "Fixture fire weather zone: central Sierra"
+ }
+}

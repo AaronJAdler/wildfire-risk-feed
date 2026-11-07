@@ -1,0 +1,44 @@
+[project]
+name = "wildfire-risk-feed"
+version = "0.1.0"
+description = "Near-real-time California wildfire risk feed from CAL FIRE incidents, NASA FIRMS hotspots and NWS fire weather alerts."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "duckdb>=1.1",
+    "h3>=4.1,<5",
+    "httpx>=0.27",
+    "pydantic>=2.8,<3",
+]
+
+[project.scripts]
+riskfeed = "riskfeed.cli:main"
+
+[dependency-groups]
+dev = ["mypy>=1.11", "pytest>=8", "ruff>=0.6"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/riskfeed"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "SIM", "DTZ"]
+ignore = ["S608"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S311"]
+
+[tool.mypy]
+files = ["src"]
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

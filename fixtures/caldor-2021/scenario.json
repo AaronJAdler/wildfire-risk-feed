@@ -1,0 +1,20 @@
+{
+ "ticks": [
+  {
+   "name": "1-satellites-first",
+   "now": "2021-08-15T09:30:00+00:00"
+  },
+  {
+   "name": "2-calfire-lists-caldor",
+   "now": "2021-08-15T21:30:00+00:00"
+  },
+  {
+   "name": "3-firms-outage",
+   "now": "2021-08-16T21:30:00+00:00"
+  },
+  {
+   "name": "4-recovery",
+   "now": "2021-08-17T21:30:00+00:00"
+  }
+ ]
+}

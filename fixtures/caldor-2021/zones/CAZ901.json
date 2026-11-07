@@ -1,0 +1,36 @@
+{
+ "id": "https://api.weather.gov/zones/fire/CAZ901",
+ "type": "Feature",
+ "geometry": {
+  "type": "Polygon",
+  "coordinates": [
+   [
+    [
+     -121.7,
+     39.6
+    ],
+    [
+     -120.3,
+     39.6
+    ],
+    [
+     -120.3,
+     40.7
+    ],
+    [
+     -121.7,
+     40.7
+    ],
+    [
+     -121.7,
+     39.6
+    ]
+   ]
+  ]
+ },
+ "properties": {
+  "id": "CAZ901",
+  "type": "fire",
+  "name": "Fixture fire weather zone: northern Sierra"
+ }
+}
