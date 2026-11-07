@@ -50,6 +50,21 @@ jobs:
           for t in run["transitions"]:
               print(f"- {t}")
           PY
+      - name: Print run and open alerts to the log
+        run: |
+          python3 - <<'PY'
+          import collections, json
+          run = json.load(open("run.json"))
+          alerts = json.load(open("public/alerts.json"))["open"]
+          print(f"RUN {run['run_id']} {run['completeness']} levels={run['levels']}")
+          for name, s in run["sources"].items():
+              print(f"SOURCE {name} {s['health']}: {s['detail']}")
+          for t in run["transitions"]:
+              print(f"TRANSITION {t}")
+          print(f"OPEN {dict(collections.Counter(a['kind'] for a in alerts))}")
+          for a in alerts:
+              print(f"ALERT {a['kind']} {a['level']} | {a['title']} | {a['text']}")
+          PY
       - name: Save feed state
         if: always()
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
