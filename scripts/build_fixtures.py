@@ -8,6 +8,8 @@ What is real and what is not:
   from 2021-07-20, whose longitude was published as -11846461, to exercise quarantine.
 - firms.csv: generated, seeded. Detections are placed around the real incident locations at
   realistic VIIRS overpass times, in the exact column format of the FIRMS area API.
+- wfigs_incidents.json: generated, in the WFIGS ArcGIS format: a prescribed burn with real heat,
+  and the Caldor Fire as WFIGS reports it, to exercise merging with CAL FIRE's record.
 - nws_alerts.json and zones/: generated. Real NWS GeoJSON message format; the zone codes
   (CAZ901 and so on) and outlines are invented.
 """
@@ -59,6 +61,7 @@ FIRES: dict[str, list[tuple[str, float, float, float, int, tuple[float, float], 
         ("bell", 39.835, -123.635, 0.5, 1, (1, 3), "l"),
         ("field-burn", 35.905, -119.215, 0.4, 2, (6, 12), "nn"),
         ("hot-roof", 36.80, -120.10, 0.1, 1, (1, 2), "l"),
+        ("prescribed-burn", 39.640, -123.440, 0.6, 3, (8, 20), "nn"),
         ("nevada", 39.55, -117.05, 3, 3, (5, 20), "mix"),
         ("oregon", 43.10, -121.60, 2, 2, (5, 20), "mix"),
     ],
@@ -245,6 +248,66 @@ ZONES = {
 }
 
 
+def wfigs_incident(
+    irwin: str,
+    name: str,
+    kind: str,
+    lat: float,
+    lon: float,
+    acres: float | None,
+    contained: float | None,
+    discovered: str,
+    agency: str,
+) -> dict[str, object]:
+    ms = int(dt.datetime.fromisoformat(discovered).timestamp() * 1000)
+    return {
+        "attributes": {
+            "IrwinID": irwin,
+            "IncidentName": name,
+            "IncidentTypeCategory": kind,
+            "IncidentSize": acres,
+            "PercentContained": contained,
+            "FireDiscoveryDateTime": ms,
+            "ModifiedOnDateTime_dt": ms,
+            "POOCounty": "Fixture",
+            "POOProtectingAgency": agency,
+            "UniqueFireIdentifier": f"2021-FIX-{irwin[1:7]}",
+        },
+        "geometry": {"x": lon, "y": lat},
+    }
+
+
+def wfigs_ticks() -> dict[str, list[dict[str, object]]]:
+    burn = wfigs_incident(
+        "{0F1XTURE-0000-0000-0000-000000000001}",
+        "SHAMROCK VMP RX",
+        "RX",
+        39.640,
+        -123.440,
+        120,
+        None,
+        "2021-08-15T06:00:00+00:00",
+        "CAL FIRE",
+    )
+    caldor = wfigs_incident(
+        "{0F1XTURE-0000-0000-0000-000000000002}",
+        "CALDOR",
+        "WF",
+        38.590,
+        -120.535,
+        None,
+        0,
+        "2021-08-15T01:54:00+00:00",
+        "USFS",
+    )
+    return {
+        "1-satellites-first": [burn],
+        "2-calfire-lists-caldor": [burn, caldor],
+        "3-firms-outage": [caldor],
+        "4-recovery": [caldor],
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--replay", required=True, help="ca-wildfire-elt/data/replay")
@@ -279,6 +342,19 @@ def main() -> None:
         else:
             firms_file.unlink(missing_ok=True)
             status_file.write_text("503\n")
+        (folder / "wfigs_incidents.json").write_text(
+            json.dumps(
+                {
+                    "objectIdFieldName": "OBJECTID",
+                    "spatialReference": {"wkid": 4326},
+                    "features": wfigs_ticks()[name],
+                },
+                indent=1,
+            )
+        )
+        (folder / "wfigs_perimeters.geojson").write_text(
+            json.dumps({"type": "FeatureCollection", "features": []})
+        )
         (folder / "nws_alerts.json").write_text(
             json.dumps({"type": "FeatureCollection", "features": alerts[name]}, indent=1)
         )

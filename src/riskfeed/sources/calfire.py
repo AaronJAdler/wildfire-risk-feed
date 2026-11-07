@@ -106,3 +106,39 @@ def fetch(fetcher: Fetcher, settings: Settings) -> SourceResult:
     return SourceResult(
         "calfire", ok=True, records=incidents, quarantined=quarantined, detail=detail
     )
+
+
+def fetch_contained(fetcher: Fetcher, settings: Settings, year: int) -> list[dict[str, Any]] | None:
+    """This year's contained and finished fires, for the map. None when unavailable.
+
+    CAL FIRE's own incident map shows these, so the feed does too; they never affect scores.
+    """
+    response = fetcher.get("calfire", settings.calfire_contained_url, accept="application/json")
+    if not response.ok or response.body is None:
+        return None
+    try:
+        payload = json.loads(response.body)
+    except ValueError:
+        return None
+    out: list[dict[str, Any]] = []
+    for raw in payload if isinstance(payload, list) else []:
+        try:
+            record = CalFireRecord.model_validate(raw)
+        except ValidationError:
+            continue
+        lat, lon = record.latitude, record.longitude
+        if lat is None or lon is None or not in_bbox(lat, lon, CA_BBOX):
+            continue
+        if not record.started or record.started.year != year:
+            continue
+        out.append(
+            {
+                "name": record.name,
+                "lat": lat,
+                "lon": lon,
+                "acres": record.acres,
+                "started": record.started.date().isoformat(),
+                "url": raw.get("Url") if isinstance(raw, dict) else None,
+            }
+        )
+    return out

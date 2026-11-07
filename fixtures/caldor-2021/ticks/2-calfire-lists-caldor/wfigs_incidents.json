@@ -1,0 +1,44 @@
+{
+ "objectIdFieldName": "OBJECTID",
+ "spatialReference": {
+  "wkid": 4326
+ },
+ "features": [
+  {
+   "attributes": {
+    "IrwinID": "{0F1XTURE-0000-0000-0000-000000000001}",
+    "IncidentName": "SHAMROCK VMP RX",
+    "IncidentTypeCategory": "RX",
+    "IncidentSize": 120,
+    "PercentContained": null,
+    "FireDiscoveryDateTime": 1629007200000,
+    "ModifiedOnDateTime_dt": 1629007200000,
+    "POOCounty": "Fixture",
+    "POOProtectingAgency": "CAL FIRE",
+    "UniqueFireIdentifier": "2021-FIX-0F1XTU"
+   },
+   "geometry": {
+    "x": -123.44,
+    "y": 39.64
+   }
+  },
+  {
+   "attributes": {
+    "IrwinID": "{0F1XTURE-0000-0000-0000-000000000002}",
+    "IncidentName": "CALDOR",
+    "IncidentTypeCategory": "WF",
+    "IncidentSize": null,
+    "PercentContained": 0,
+    "FireDiscoveryDateTime": 1628992440000,
+    "ModifiedOnDateTime_dt": 1628992440000,
+    "POOCounty": "Fixture",
+    "POOProtectingAgency": "USFS",
+    "UniqueFireIdentifier": "2021-FIX-0F1XTU"
+   },
+   "geometry": {
+    "x": -120.535,
+    "y": 38.59
+   }
+  }
+ ]
+}

@@ -3,8 +3,8 @@
 [![CI](https://github.com/AaronJAdler/wildfire-risk-feed/actions/workflows/ci.yml/badge.svg)](https://github.com/AaronJAdler/wildfire-risk-feed/actions/workflows/ci.yml)
 [![Live feed](https://github.com/AaronJAdler/wildfire-risk-feed/actions/workflows/live.yml/badge.svg)](https://github.com/AaronJAdler/wildfire-risk-feed/actions/workflows/live.yml)
 
-A near-real-time California wildfire risk feed. Every 3 hours it combines **CAL FIRE** incidents,
-**NASA FIRMS** satellite detections and **NWS** fire weather alerts into a scored H3 hexagon map,
+A near-real-time California wildfire risk feed. Every 3 hours it combines **CAL FIRE** and **NIFC WFIGS** (interagency)
+incidents and perimeters, **NASA FIRMS** satellite detections and **NWS** fire weather alerts into a scored H3 hexagon map,
 flags satellite heat that no reported incident explains, and sends deduplicated alerts.
 
 **[Live map](https://aaronjadler.github.io/wildfire-risk-feed/)** · [GeoJSON feed](https://aaronjadler.github.io/wildfire-risk-feed/feed.geojson) · [status](https://aaronjadler.github.io/wildfire-risk-feed/status.json)
@@ -58,7 +58,7 @@ Needs Python 3.12 and [uv](https://docs.astral.sh/uv/). Works on Windows, macOS 
 
 ```bash
 uv sync
-uv run pytest                                   # 37 tests, about 20 seconds
+uv run pytest                                   # 43 tests, about 20 seconds
 uv run riskfeed replay fixtures/caldor-2021     # writes .replay/public/
 uv run riskfeed tick                            # one live run, writes public/
 ```
@@ -76,7 +76,7 @@ Optional settings, as environment variables (or repository secrets for the live 
 
 | Check | Where |
 |---|---|
-| Lint (ruff), strict types (mypy), 37 tests: HTTP resilience, each source's parsing and failure modes, score properties, attribution, alert lifecycle, circuit breaker, webhook retries, idempotent reruns, the full scenario | Locally and in CI |
+| Lint (ruff), strict types (mypy), 43 tests: HTTP resilience, each source's parsing and failure modes, score properties, attribution, alert lifecycle, circuit breaker, webhook retries, idempotent reruns, the full scenario | Locally and in CI |
 | Scenario replay | CI, printed to the run summary |
 | Live CAL FIRE, FIRMS and NWS | The scheduled `Live feed` workflow only. The APIs were not reachable from where this was built, so the first live runs are the first contact; check the workflow's run summaries. |
 
@@ -89,11 +89,12 @@ Optional settings, as environment variables (or repository secrets for the live 
 - [ADR 0004](docs/adr/0004-transactional-outbox.md): transactional outbox, at-least-once delivery
 - [ADR 0005](docs/adr/0005-static-site-on-github-actions.md): GitHub Actions schedule and Pages
 - [ADR 0006](docs/adr/0006-recorded-scenario-from-real-data.md): a recorded scenario from real CAL FIRE data
+- [ADR 0007](docs/adr/0007-interagency-incidents-and-perimeters.md): interagency incidents, perimeters and prescribed burns
 
 ## Limits
 
 - The score is a triage heuristic, not a fire-behaviour model: no fuels, terrain or wind speed.
-- Attribution uses incident origins; where listed fires sit close together, heat can go to the
-  wrong one. Published perimeters are the next step.
+- Fires without a WFIGS perimeter are matched by origin point; where such fires sit close
+  together, heat can go to the wrong one.
 - Freshness is bounded by the 3-hour schedule, and GitHub may delay scheduled runs.
 - Not an official warning service. Follow local authorities.

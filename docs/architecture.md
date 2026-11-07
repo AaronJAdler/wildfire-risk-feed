@@ -10,6 +10,7 @@ between runs in one DuckDB file.
 flowchart LR
     subgraph sources["Public sources"]
         cf["CAL FIRE<br/>incident list (JSON)"]
+        wf["NIFC WFIGS<br/>incidents + perimeters (ArcGIS)"]
         firms["NASA FIRMS<br/>VIIRS detections (CSV)"]
         nws["NWS alerts<br/>+ fire zone outlines (GeoJSON)"]
     end
@@ -33,7 +34,7 @@ flowchart LR
         engine["alert engine<br/>hysteresis, cooldown,<br/>degraded-data rules"]
     end
 
-    cf & firms & nws --> breaker --> http --> validate --> known
+    cf & wf & firms & nws --> breaker --> http --> validate --> known
     known --> score & attr
     fp <--> attr
     score & attr --> engine
@@ -72,7 +73,9 @@ assigned an owner:
 
 ```mermaid
 flowchart TD
-    g["group of detections"] --> d{"an incident within its match radius?<br/>(2 x radius of the fire's area, min 10 km;<br/>25 km when acreage is unreported)"}
+    g["group of detections"] --> per{"inside or touching a WFIGS perimeter?"}
+    per -- yes --> own
+    per -- no --> d{"an incident within its match radius?<br/>(2 x radius of the fire's area, min 10 km;<br/>25 km when acreage is unreported)"}
     d -- "yes: best by distance / radius" --> own["owned by that incident"]
     d -- no --> f{"touches the fire's footprint<br/>(cells it owned in the last 72 h)?"}
     f -- yes --> own
@@ -127,7 +130,7 @@ days (from Project 1's replay data). Detections and weather alerts are generated
 |---|---|
 | `config.py` | every threshold, with its reason |
 | `http.py` | resilient GET: retries, Retry-After, conditional requests, secret masking |
-| `sources/` | CAL FIRE, FIRMS (keyed API or public file), NWS (alerts, updates, cancels, zones) |
+| `sources/` | CAL FIRE (active and contained), NIFC WFIGS (incidents incl. prescribed burns, perimeters), FIRMS (keyed API or public file), NWS (alerts, updates, cancels, zones) |
 | `store.py` | DuckDB state, HTTP cache, fetch log, quarantine, alerts, outbox |
 | `scoring.py` | the 0-100 cell score |
 | `fires.py` | clustering and attribution of detections |

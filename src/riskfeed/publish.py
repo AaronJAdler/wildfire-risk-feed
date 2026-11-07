@@ -35,6 +35,7 @@ def publish(
     scores: dict[str, CellScore],
     open_alerts: list[dict[str, Any]],
     last_messages: dict[str, dict[str, Any]],
+    layers: dict[str, Any] | None = None,
 ) -> None:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -82,5 +83,68 @@ def publish(
     _write(out / "feed.geojson", json.dumps(feed, separators=(",", ":")))
     _write(out / "alerts.json", json.dumps(alerts, indent=2, default=str))
     _write(out / "status.json", json.dumps(status, indent=2, default=str))
+    _write_layers(out, header, layers or {})
     page = resources.files("riskfeed").joinpath("web/index.html").read_text(encoding="utf-8")
     _write(out / "index.html", page)
+
+
+def _point(lon: float, lat: float, props: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": [lon, lat]},
+        "properties": props,
+    }
+
+
+def _write_layers(out: Path, header: dict[str, Any], layers: dict[str, Any]) -> None:
+    """Context layers for the map: known incidents, perimeters, and this year's contained fires.
+
+    A layer that could not be fetched this run is left as it was, rather than emptied.
+    """
+    if layers.get("incidents") is not None:
+        features = [
+            _point(
+                i.lon,
+                i.lat,
+                {
+                    "name": i.name,
+                    "kind": i.kind,
+                    "source": i.source,
+                    "agency": i.agency,
+                    "acres": i.acres,
+                    "contained": i.contained,
+                    "url": i.url,
+                    "started": i.started.date().isoformat() if i.started else None,
+                },
+            )
+            for i in layers["incidents"]
+        ]
+        _write(
+            out / "incidents.geojson",
+            json.dumps({"type": "FeatureCollection", **header, "features": features}),
+        )
+    if layers.get("perimeters") is not None:
+        features = [
+            {
+                "type": "Feature",
+                "properties": {"name": p.name, "acres": p.acres},
+                "geometry": {
+                    "type": "MultiPolygon",
+                    "coordinates": [[cell_polygon(c)] for c in sorted(p.cells)],
+                },
+            }
+            for p in layers["perimeters"]
+        ]
+        _write(
+            out / "perimeters.geojson",
+            json.dumps({"type": "FeatureCollection", **header, "features": features}),
+        )
+    if layers.get("contained") is not None:
+        features = [
+            _point(f["lon"], f["lat"], {k: v for k, v in f.items() if k not in {"lat", "lon"}})
+            for f in layers["contained"]
+        ]
+        _write(
+            out / "contained.geojson",
+            json.dumps({"type": "FeatureCollection", **header, "features": features}),
+        )

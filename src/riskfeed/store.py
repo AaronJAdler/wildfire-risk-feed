@@ -16,7 +16,7 @@ from typing import Any
 import duckdb
 
 from riskfeed.fires import Owner
-from riskfeed.models import Hotspot, Incident, WeatherAlert
+from riskfeed.models import Hotspot, Incident, Perimeter, WeatherAlert
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS http_cache (
@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS cell_scores (
 CREATE TABLE IF NOT EXISTS alerts (
     key VARCHAR PRIMARY KEY, kind VARCHAR, status VARCHAR, version INTEGER, opened_at TIMESTAMP,
     closed_at TIMESTAMP, updated_at TIMESTAMP, level VARCHAR, details VARCHAR);
+CREATE TABLE IF NOT EXISTS perimeters (
+    incident_id VARCHAR PRIMARY KEY, name VARCHAR, acres DOUBLE, cells VARCHAR);
 CREATE TABLE IF NOT EXISTS footprint (
     cell VARCHAR PRIMARY KEY, incident_id VARCHAR, incident_name VARCHAR, last_seen TIMESTAMP);
 CREATE TABLE IF NOT EXISTS outbox (
@@ -76,6 +78,13 @@ class Store:
             Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.db = duckdb.connect(str(path))
         self.db.execute(SCHEMA)
+        # Columns added after the first live runs; existing state files gain them in place.
+        for column, kind in (
+            ("source", "VARCHAR DEFAULT 'calfire'"),
+            ("kind", "VARCHAR DEFAULT 'wildfire'"),
+            ("agency", "VARCHAR"),
+        ):
+            self.db.execute(f"ALTER TABLE incidents ADD COLUMN IF NOT EXISTS {column} {kind}")
 
     def close(self) -> None:
         self.db.close()
@@ -159,17 +168,23 @@ class Store:
             )
 
     # Incidents: the latest successful CAL FIRE fetch is the truth; first_seen survives.
-    def replace_incidents(self, incidents: list[Incident], at: dt.datetime) -> None:
-        self.db.execute("UPDATE incidents SET active = false")
+    def replace_incidents(
+        self, incidents: list[Incident], at: dt.datetime, source: str = "calfire"
+    ) -> None:
+        """The latest successful fetch from one source replaces that source's incidents."""
+        self.db.execute("UPDATE incidents SET active = false WHERE source = ?", [source])
         for i in incidents:
             self.db.execute(
                 """
-                INSERT INTO incidents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true, ?, ?)
+                INSERT INTO incidents (id, name, lat, lon, acres, contained, started, updated,
+                    counties, url, active, first_seen, last_seen, source, kind, agency)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, true, ?, ?, ?, ?, ?)
                 ON CONFLICT (id) DO UPDATE SET name = excluded.name, lat = excluded.lat,
                     lon = excluded.lon, acres = excluded.acres, contained = excluded.contained,
                     started = excluded.started, updated = excluded.updated,
                     counties = excluded.counties, url = excluded.url, active = true,
-                    last_seen = excluded.last_seen
+                    last_seen = excluded.last_seen, source = excluded.source,
+                    kind = excluded.kind, agency = excluded.agency
                 """,
                 [
                     i.id,
@@ -184,6 +199,9 @@ class Store:
                     i.url,
                     to_db(at),
                     to_db(at),
+                    i.source,
+                    i.kind,
+                    i.agency,
                 ],
             )
 
@@ -200,6 +218,9 @@ class Store:
                 _utc(r["updated"]),
                 tuple(json.loads(r["counties"])),
                 r["url"],
+                r["source"] or "calfire",
+                r["kind"] or "wildfire",
+                r["agency"],
             )
             for r in self._rows("SELECT * FROM incidents WHERE active ORDER BY id")
         ]
@@ -267,6 +288,21 @@ class Store:
                 r["daynight"],
             )
             for r in rows
+        ]
+
+    # Perimeters: the latest successful WFIGS fetch is the truth.
+    def replace_perimeters(self, perimeters: list[Perimeter]) -> None:
+        self.db.execute("DELETE FROM perimeters")
+        for p in perimeters:
+            self.db.execute(
+                "INSERT OR REPLACE INTO perimeters VALUES (?, ?, ?, ?)",
+                [p.incident_id, p.name, p.acres, json.dumps(sorted(p.cells))],
+            )
+
+    def perimeters(self) -> list[Perimeter]:
+        return [
+            Perimeter(r["incident_id"], r["name"], r["acres"], frozenset(json.loads(r["cells"])))
+            for r in self._rows("SELECT * FROM perimeters ORDER BY incident_id")
         ]
 
     # Footprint: ground each fire has burned recently, so its spread stays attributed to it.

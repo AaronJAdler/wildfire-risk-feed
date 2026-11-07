@@ -102,6 +102,7 @@ def areas(
     event never pages twice.
     """
     out: dict[str, Area] = {}
+    planned = {i.id for i in incidents if i.kind == "prescribed"}
     for score in scores.values():
         if score.score < settings.clear_below:
             continue
@@ -110,8 +111,8 @@ def areas(
             lat, lon = geo.centroid(score.cell)
             match = explaining_incident(lat, lon, incidents, settings.ignition_match_km)
             owner = Owner(match[0].id, match[0].name) if match else None
-        if owner is None:
-            continue
+        if owner is None or owner.id in planned:
+            continue  # prescribed burns are planned heat: shown on the map, never paged
         key = f"risk:incident:{owner.id}"
         area = out.setdefault(key, Area(key, owner.name, score))
         area.cells += 1

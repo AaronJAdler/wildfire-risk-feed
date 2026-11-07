@@ -1,4 +1,4 @@
-"""The three kinds of signal the feed combines, in a form every later step can trust."""
+"""The signals the feed combines, in a form every later step can trust."""
 
 from __future__ import annotations
 
@@ -6,13 +6,13 @@ import datetime as dt
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-SourceName = Literal["calfire", "firms", "nws"]
+SourceName = Literal["calfire", "wfigs", "firms", "nws"]
 Health = Literal["ok", "stale", "down"]
 
 
 @dataclass(frozen=True)
 class Incident:
-    """A fire CAL FIRE is tracking. The point is where it started, not its current extent."""
+    """A fire an agency is tracking. The point is where it started, not its current extent."""
 
     id: str
     name: str
@@ -24,6 +24,19 @@ class Incident:
     updated: dt.datetime
     counties: tuple[str, ...] = ()
     url: str | None = None
+    source: str = "calfire"  # calfire or wfigs
+    kind: str = "wildfire"  # wildfire or prescribed
+    agency: str | None = None
+
+
+@dataclass(frozen=True)
+class Perimeter:
+    """A fire's mapped outline, as the resolution-7 cells it covers."""
+
+    incident_id: str
+    name: str
+    acres: float | None
+    cells: frozenset[str]
 
 
 @dataclass(frozen=True)
@@ -62,3 +75,4 @@ class SourceResult:
     quarantined: list[dict[str, Any]] = field(default_factory=list)
     detail: str = ""
     skipped: bool = False  # circuit breaker open
+    extra: Any = None  # source-specific extras: WFIGS perimeters

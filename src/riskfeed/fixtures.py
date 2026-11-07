@@ -7,6 +7,8 @@ A scenario folder holds one subfolder per tick with what each source returned at
     ticks/<name>/calfire.json     CAL FIRE incident list
     ticks/<name>/firms.csv        FIRMS detections
     ticks/<name>/nws_alerts.json  NWS alerts
+    ticks/<name>/wfigs_incidents.json, wfigs_perimeters.geojson   NIFC WFIGS
+    ticks/<name>/calfire_contained.json   optional: CAL FIRE's contained list
     ticks/<name>/<file>.status    optional: answer every request for <file> with this status
 
 The transport sets an ETag on every response and answers If-None-Match with 304, so the
@@ -44,7 +46,12 @@ def transport(scenario: str | Path, tick: str, log: list[str] | None = None) -> 
         if log is not None:
             log.append(f"{request.method} {host}{path}")
         if host == "www.fire.ca.gov":
-            file = folder / "calfire.json"
+            contained = "inactive=true" in str(request.url.query, "ascii")
+            file = folder / ("calfire_contained.json" if contained else "calfire.json")
+        elif host == "services3.arcgis.com":
+            file = folder / (
+                "wfigs_perimeters.geojson" if "Perimeters" in path else "wfigs_incidents.json"
+            )
         elif host == "firms.modaps.eosdis.nasa.gov":
             file = folder / "firms.csv"
         elif host == "api.weather.gov" and path.startswith("/alerts"):

@@ -21,13 +21,13 @@ from riskfeed import alerts, fires, geo, scoring
 from riskfeed.config import Settings
 from riskfeed.delivery import Sink, deliver
 from riskfeed.http import Fetcher
-from riskfeed.models import Health, SourceName, SourceResult
+from riskfeed.models import Health, Incident, Perimeter, SourceName, SourceResult
 from riskfeed.publish import publish
-from riskfeed.sources import calfire, firms, nws
+from riskfeed.sources import calfire, firms, nws, wfigs
 from riskfeed.store import Store
 
 log = logging.getLogger(__name__)
-SOURCES: tuple[SourceName, ...] = ("calfire", "firms", "nws")
+SOURCES: tuple[SourceName, ...] = ("calfire", "wfigs", "firms", "nws")
 FOOTPRINT_MEMORY = dt.timedelta(hours=72)
 
 
@@ -58,6 +58,8 @@ def _fetch_source(
 ) -> SourceResult:
     if name == "calfire":
         return calfire.fetch(fetcher, settings)
+    if name == "wfigs":
+        return wfigs.fetch(fetcher, settings, now)
     if name == "firms":
         return firms.fetch(fetcher, settings)
     return nws.fetch(fetcher, settings, now)
@@ -84,7 +86,11 @@ def _collect(
     with store.transaction():
         if result.ok:
             if name == "calfire":
-                store.replace_incidents(result.records, now)
+                store.replace_incidents(result.records, now, "calfire")
+            elif name == "wfigs":
+                store.replace_incidents(result.records, now, "wfigs")
+                if result.extra is not None:
+                    store.replace_perimeters(result.extra)
             elif name == "firms":
                 store.add_hotspots(result.records, now)
             else:
@@ -101,6 +107,37 @@ def _collect(
             if tripped:
                 result.detail += f"; circuit opened after {failures} failed runs"
     return result
+
+
+def _normal_name(name: str) -> str:
+    letters = "".join(c for c in name.lower() if c.isalpha() or c == " ")
+    return " ".join(w for w in letters.split() if w not in {"fire", "complex"})
+
+
+def merge_incidents(incidents: list[Incident]) -> tuple[list[Incident], dict[str, str]]:
+    """One record per fire. A WFIGS incident with the same name as a CAL FIRE incident within
+    10 km is the same fire; CAL FIRE's record is kept, and the WFIGS id is mapped to it so its
+    perimeter still applies."""
+    cal = [i for i in incidents if i.source == "calfire"]
+    kept: list[Incident] = list(cal)
+    aliases: dict[str, str] = {}
+    for i in incidents:
+        if i.source == "calfire":
+            continue
+        twin = next(
+            (
+                c
+                for c in cal
+                if _normal_name(c.name) == _normal_name(i.name)
+                and geo.haversine_km(c.lat, c.lon, i.lat, i.lon) <= 10
+            ),
+            None,
+        )
+        if twin:
+            aliases[i.id] = twin.id
+        else:
+            kept.append(i)
+    return kept, aliases
 
 
 def health_of(
@@ -141,7 +178,11 @@ def run_tick(
     }
 
     # The best data available: last known incidents and weather, and stored detections.
-    incidents = store.active_incidents()
+    incidents, aliases = merge_incidents(store.active_incidents())
+    perimeters = [
+        Perimeter(aliases.get(p.incident_id, p.incident_id), p.name, p.acres, p.cells)
+        for p in store.perimeters()
+    ]
     weather = [
         a
         for a in store.weather_alerts()
@@ -155,7 +196,11 @@ def run_tick(
     )
     groups = fires.clusters(hotspots, settings.ignition_cluster_resolution)
     owners = fires.attribute(
-        groups, incidents, store.footprint(now - FOOTPRINT_MEMORY), settings.ignition_match_km
+        groups,
+        incidents,
+        store.footprint(now - FOOTPRINT_MEMORY),
+        settings.ignition_match_km,
+        perimeters,
     )
     persistent = store.persistent_cells(now, settings.ignition_cluster_resolution)
 
@@ -203,6 +248,9 @@ def run_tick(
         )
         store.record_run(run_id, now, completeness, sources, [s.as_row() for s in scores.values()])
     delivery = deliver(store, sinks, now)
+    contained = None
+    if results["calfire"].ok:
+        contained = calfire.fetch_contained(fetcher, settings, now.year)
     publish(
         out_dir,
         now,
@@ -212,6 +260,7 @@ def run_tick(
         scores,
         store.open_alerts(),
         store.latest_messages(),
+        layers={"incidents": incidents, "perimeters": perimeters, "contained": contained},
     )
     levels: dict[str, int] = {}
     for s in scores.values():

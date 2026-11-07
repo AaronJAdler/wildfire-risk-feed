@@ -3,7 +3,8 @@
 Detections are grouped by touching H3 cells at resolution 7 (about 2.5 km across). Each group is
 then attributed, in order of preference:
 
-1. To a CAL FIRE incident close enough to explain it. CAL FIRE's coordinates are where a fire
+0. To the fire whose mapped perimeter (from WFIGS) it falls in or touches.
+1. To a listed incident close enough to explain it. CAL FIRE's coordinates are where a fire
    started, so "close enough" grows with the fire's size. A fire listed without acreage, which
    is common for large federal fires, is treated as large.
 2. To a fire whose recent footprint it touches: ground attributed to that fire in the last 72
@@ -11,8 +12,8 @@ then attributed, in order of preference:
    tens of kilometres from where it started.
 3. To a neighbouring group that has already been attributed, repeated until nothing changes.
 
-Groups left over are possible new fires. Published fire perimeters would make step 1 more
-precise; the footprint makes the feed work without them.
+Groups left over are possible new fires. Perimeters are the most precise step, but most fires
+have none, or only a day-old one, so the other steps still carry most of the work.
 """
 
 from __future__ import annotations
@@ -20,10 +21,11 @@ from __future__ import annotations
 import datetime as dt
 import math
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 from riskfeed import geo
-from riskfeed.models import Hotspot, Incident
+from riskfeed.models import Hotspot, Incident, Perimeter
 
 ACRE_KM2 = 0.00404686
 UNKNOWN_SIZE_MATCH_KM = 25.0
@@ -127,11 +129,26 @@ def explaining_incident(
 
 
 def attribute(
-    groups: list[Cluster], incidents: list[Incident], footprint: dict[str, Owner], base_km: float
+    groups: list[Cluster],
+    incidents: list[Incident],
+    footprint: dict[str, Owner],
+    base_km: float,
+    perimeters: Sequence[Perimeter] = (),
 ) -> dict[int, Owner]:
     """Owner of each attributable group, by index into `groups`."""
     owners: dict[int, Owner] = {}
+    names = {i.id: i.name for i in incidents}
+    outline: dict[str, Owner] = {}
+    for p in perimeters:
+        for c in p.cells:
+            outline.setdefault(c, Owner(p.incident_id, names.get(p.incident_id, p.name)))
     for index, group in enumerate(groups):
+        inside = Counter(
+            outline[c] for cell in group.cells for c in geo.ring(cell, 1) if c in outline
+        )
+        if inside:
+            owners[index] = sorted(inside.items(), key=lambda kv: (-kv[1], kv[0].id))[0][0]
+            continue
         match = explaining_incident(group.lat, group.lon, incidents, base_km)
         if match:
             owners[index] = Owner(match[0].id, match[0].name)

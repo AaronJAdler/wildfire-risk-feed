@@ -30,10 +30,30 @@ class Settings:
         "SUOMI_VIIRS_C2_USA_contiguous_and_Hawaii_24h.csv"
     )
 
+    # NIFC's interagency feed (WFIGS): federal, state and local incidents, including
+    # prescribed burns, and their mapped perimeters.
+    wfigs_incidents_url: str = (
+        "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/"
+        "WFIGS_Incident_Locations_Current/FeatureServer/0/query?where=POOState%3D%27US-CA%27"
+        "&outFields=IrwinID,IncidentName,IncidentTypeCategory,IncidentSize,PercentContained,"
+        "FireDiscoveryDateTime,ModifiedOnDateTime_dt,POOCounty,POOProtectingAgency,"
+        "UniqueFireIdentifier&outSR=4326&resultRecordCount=2000&f=json"
+    )
+    wfigs_perimeters_url: str = (
+        "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/"
+        "WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?"
+        "where=attr_POOState%3D%27US-CA%27&outFields=attr_IrwinID,poly_IncidentName,"
+        "poly_GISAcres&outSR=4326&geometryPrecision=5&f=geojson"
+    )
+    calfire_contained_url: str = (
+        "https://www.fire.ca.gov/umbraco/api/IncidentApi/List?inactive=true"
+    )
+
     # How old a source's last good data may be before the source counts as down.
     max_age: dict[str, dt.timedelta] = field(
         default_factory=lambda: {
             "calfire": dt.timedelta(hours=6),
+            "wfigs": dt.timedelta(hours=6),
             "firms": dt.timedelta(hours=12),
             "nws": dt.timedelta(hours=2),
         }
