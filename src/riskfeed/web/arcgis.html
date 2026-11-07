@@ -81,7 +81,7 @@
   <p class="meta"><a href="https://github.com/AaronJAdler/wildfire-risk-feed">Source code on GitHub</a></p>
 </aside>
 
-<details class="how" open>
+<details class="how">
   <summary>How this ArcGIS map was built
     <span class="meta">ArcGIS Online reads the pipeline's public files directly, so it is always current</span></summary>
   <ol class="steps">
@@ -132,12 +132,12 @@ Promise.all([load("status.json"), load("alerts.json")]).then(([status, alerts]) 
   }
 }).catch(err => { document.getElementById("generated").textContent = "Could not load the feed: " + err.message; });
 
-// The explainer starts open on wide screens and closed on phones, and remembers the choice.
+// The explainer starts closed and remembers if a viewer opens it.
 const how = document.querySelector(".how");
 try {
-  const saved = localStorage.getItem("arcgis-how-open");
-  how.open = saved === null ? window.innerWidth > 760 : saved === "1";
-  how.addEventListener("toggle", () => { try { localStorage.setItem("arcgis-how-open", how.open ? "1" : "0"); } catch (e) {} });
+  const saved = localStorage.getItem("arcgis-how-open-v2");
+  how.open = saved === "1";
+  how.addEventListener("toggle", () => { try { localStorage.setItem("arcgis-how-open-v2", how.open ? "1" : "0"); } catch (e) {} });
 } catch (e) {}
 </script>
 </body>
